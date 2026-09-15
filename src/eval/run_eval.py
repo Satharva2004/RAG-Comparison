@@ -4,6 +4,7 @@ results under results/.
 """
 import json
 import time
+from concurrent.futures import ThreadPoolExecutor, TimeoutError as FutureTimeoutError
 
 from src.common.config import APPROACHES, EVAL_DIR, RESULTS_DIR, VERTICALS
 from src.common.llm import generate_answer, judge_answer
@@ -33,13 +34,35 @@ def retrieval_hit(gold_context: str, retrieved: list[dict]) -> bool:
     return False
 
 
+RETRIEVE_TIMEOUT_S = 30  # a stale connection (esp. Neo4j Aura) can hang with no
+                          # exception raised at all - bound every call so one bad
+                          # question can't stall an entire (vertical, approach) run
+
+
 def run_one(approach: str, vertical: str, eval_rows: list[dict]) -> list[dict]:
     retriever = RETRIEVERS[approach]()
     rows_out = []
+    executor = ThreadPoolExecutor(max_workers=1)
     for qi, row in enumerate(eval_rows):
         print(f"  [{qi+1}/{len(eval_rows)}] {row['id']}", flush=True)
         t0 = time.time()
-        retrieved = retriever.retrieve(vertical, row["question"], top_k=3)
+        try:
+            fut = executor.submit(retriever.retrieve, vertical, row["question"], top_k=3)
+            retrieved = fut.result(timeout=RETRIEVE_TIMEOUT_S)
+        except FutureTimeoutError:
+            print(f"    retrieve() timed out after {RETRIEVE_TIMEOUT_S}s, skipping question", flush=True)
+            # stale connection: rebuild the executor/retriever so the next
+            # question gets a fresh one instead of queuing behind the hang
+            executor.shutdown(wait=False, cancel_futures=True)
+            executor = ThreadPoolExecutor(max_workers=1)
+            retriever = RETRIEVERS[approach]()
+            rows_out.append({
+                "id": row["id"], "question": row["question"], "gold_answer": row["gold_answer"],
+                "generated_answer": "", "retrieved_doc_ids": [], "retrieval_hit": False,
+                "judge_score": 0, "judge_reasoning": "retrieval_timeout",
+                "retrieval_latency_s": RETRIEVE_TIMEOUT_S, "generation_latency_s": 0,
+            })
+            continue
         retrieval_latency = time.time() - t0
 
         t1 = time.time()
@@ -60,6 +83,7 @@ def run_one(approach: str, vertical: str, eval_rows: list[dict]) -> list[dict]:
             "retrieval_latency_s": round(retrieval_latency, 3),
             "generation_latency_s": round(generation_latency, 3),
         })
+    executor.shutdown(wait=False, cancel_futures=True)
     return rows_out
 
 

@@ -1,21 +1,21 @@
 [
   {
     "vertical": "finance",
+    "approach": "vector",
+    "n": 20,
+    "retrieval_hit_rate": 1.0,
+    "avg_judge_score": 4.8,
+    "avg_retrieval_latency_s": 1.455,
+    "avg_generation_latency_s": 2.521
+  },
+  {
+    "vertical": "finance",
     "approach": "bm25",
     "n": 20,
     "retrieval_hit_rate": 1.0,
     "avg_judge_score": 4.85,
     "avg_retrieval_latency_s": 0.005,
     "avg_generation_latency_s": 4.486
-  },
-  {
-    "vertical": "finance",
-    "approach": "graph",
-    "n": 20,
-    "retrieval_hit_rate": 0.7,
-    "avg_judge_score": 4.1,
-    "avg_retrieval_latency_s": 1.677,
-    "avg_generation_latency_s": 3.35
   },
   {
     "vertical": "finance",
@@ -28,12 +28,21 @@
   },
   {
     "vertical": "finance",
+    "approach": "graph",
+    "n": 20,
+    "retrieval_hit_rate": 0.7,
+    "avg_judge_score": 4.1,
+    "avg_retrieval_latency_s": 1.677,
+    "avg_generation_latency_s": 3.35
+  },
+  {
+    "vertical": "marketing",
     "approach": "vector",
     "n": 20,
-    "retrieval_hit_rate": 1.0,
-    "avg_judge_score": 4.8,
-    "avg_retrieval_latency_s": 1.455,
-    "avg_generation_latency_s": 2.521
+    "retrieval_hit_rate": 0.6,
+    "avg_judge_score": 4.2,
+    "avg_retrieval_latency_s": 2.028,
+    "avg_generation_latency_s": 6.854
   },
   {
     "vertical": "marketing",
@@ -46,11 +55,11 @@
   },
   {
     "vertical": "marketing",
-    "approach": "vector",
+    "approach": "hybrid",
     "n": 20,
-    "retrieval_hit_rate": 0.6,
-    "avg_judge_score": 4.2,
-    "avg_retrieval_latency_s": 2.028,
-    "avg_generation_latency_s": 6.854
+    "retrieval_hit_rate": 0.25,
+    "avg_judge_score": 1.95,
+    "avg_retrieval_latency_s": 2.441,
+    "avg_generation_latency_s": 3.972
   }
 ]

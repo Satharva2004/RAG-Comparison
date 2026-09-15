@@ -200,24 +200,48 @@
   <p style="font-size:0.82rem;color:var(--muted)">† No explicit license tag on the source page at time of writing; verify against the linked repository/paper before any commercial reuse.</p>
 
   <h3>4.2 Retrieval formulations</h3>
-  <p>Vector retrieval ranks documents by cosine similarity between the query embedding <span class="kx" data-eq="q"></span> and document embedding <span class="kx" data-eq="d"></span>:</p>
-  <div class="eq-box"><div class="kx" data-eq="\text{sim}(q, d) = \frac{q \cdot d}{\lVert q \rVert \, \lVert d \rVert}" data-display="true"></div></div>
+  <p>Vector retrieval ranks documents by cosine similarity between the query embedding <span class="eq"><i>q</i></span> and document embedding <span class="eq"><i>d</i></span> (Eq. 1):</p>
+  <div class="eq-box"><span class="eq">
+    sim(<i>q</i>, <i>d</i>) =
+    <span class="frac"><span class="n"><i>q</i> · <i>d</i></span><span class="d">‖<i>q</i>‖ ‖<i>d</i>‖</span></span>
+  </span><div class="eq-label">(1) Cosine similarity — vector retrieval</div></div>
 
-  <p>Vectorless retrieval uses Okapi BM25 over tokenized text, where <span class="kx" data-eq="f(q_i, D)"></span> is the term frequency of query term <span class="kx" data-eq="q_i"></span> in document <span class="kx" data-eq="D"></span>, <span class="kx" data-eq="|D|"></span> its length, and <span class="kx" data-eq="\text{avgdl}"></span> the corpus average length:</p>
-  <div class="eq-box"><div class="kx" data-eq="\text{BM25}(D, Q) = \sum_{i=1}^{n} \text{IDF}(q_i) \cdot \frac{f(q_i, D) \cdot (k_1 + 1)}{f(q_i, D) + k_1 \left(1 - b + b \cdot \frac{|D|}{\text{avgdl}}\right)}" data-display="true"></div></div>
+  <p>Vectorless retrieval uses Okapi BM25 over tokenized text, where <span class="eq"><i>f</i>(<i>q<sub>i</sub></i>, <i>D</i>)</span> is the term frequency of query term <i>q<sub>i</sub></i> in document <i>D</i>, |<i>D</i>| its length, and <i>avgdl</i> the corpus average length (Eq. 2):</p>
+  <div class="eq-box"><span class="eq">
+    BM25(<i>D</i>, <i>Q</i>) =
+    <span class="sumop"><span class="sigma">Σ</span><span><i>i</i>=1</span></span><sup style="font-size:0.8em">n</sup>
+    IDF(<i>q<sub>i</sub></i>) ·
+    <span class="frac"><span class="n"><i>f</i>(<i>q<sub>i</sub></i>,<i>D</i>)·(<i>k</i><sub>1</sub>+1)</span><span class="d"><i>f</i>(<i>q<sub>i</sub></i>,<i>D</i>) + <i>k</i><sub>1</sub>(1&minus;<i>b</i>+<i>b</i>·|<i>D</i>|/<i>avgdl</i>)</span></span>
+  </span><div class="eq-label">(2) Okapi BM25 — vectorless retrieval</div></div>
 
-  <p>Hybrid retrieval fuses the two rank lists with Reciprocal Rank Fusion (RRF), where <span class="kx" data-eq="\text{rank}_r(d)"></span> is document <span class="kx" data-eq="d"></span>'s rank under retriever <span class="kx" data-eq="r"></span> and <span class="kx" data-eq="k=60"></span>:</p>
-  <div class="eq-box"><div class="kx" data-eq="\text{RRF}(d) = \sum_{r \in \{\text{vector}, \text{bm25}\}} \frac{1}{k + \text{rank}_r(d)}" data-display="true"></div></div>
+  <p>Hybrid retrieval fuses the two rank lists with Reciprocal Rank Fusion (RRF), where rank<sub><i>r</i></sub>(<i>d</i>) is document <i>d</i>'s rank under retriever <i>r</i> and <i>k</i>=60 (Eq. 3):</p>
+  <div class="eq-box"><span class="eq">
+    RRF(<i>d</i>) =
+    <span class="sumop"><span class="sigma">Σ</span><span><i>r</i>∈{vec,bm25}</span></span>
+    <span class="frac"><span class="n">1</span><span class="d"><i>k</i> + rank<sub><i>r</i></sub>(<i>d</i>)</span></span>
+  </span><div class="eq-label">(3) Reciprocal Rank Fusion — hybrid retrieval</div></div>
 
-  <p>Graph retrieval extracts an entity set <span class="kx" data-eq="E(q)"></span> from the query and ranks documents by shared-entity overlap with each document's extracted entity set <span class="kx" data-eq="E(d)"></span>:</p>
-  <div class="eq-box"><div class="kx" data-eq="\text{score}_{\text{graph}}(d, q) = \bigl| E(q) \cap E(d) \bigr|" data-display="true"></div></div>
+  <p>Graph retrieval extracts an entity set <i>E</i>(<i>q</i>) from the query and ranks documents by shared-entity overlap with each document's extracted entity set <i>E</i>(<i>d</i>) (Eq. 4):</p>
+  <div class="eq-box"><span class="eq">
+    score<sub>graph</sub>(<i>d</i>, <i>q</i>) = <span class="bigpar">|</span><i>E</i>(<i>q</i>) ∩ <i>E</i>(<i>d</i>)<span class="bigpar">|</span>
+  </span><div class="eq-label">(4) Shared-entity overlap — graph retrieval</div></div>
 
   <h3>4.3 Evaluation metrics</h3>
-  <p>Retrieval hit rate over <span class="kx" data-eq="N"></span> eval questions, where <span class="kx" data-eq="\mathbb{1}[\cdot]"></span> indicates the gold supporting passage appears among the top-<span class="kx" data-eq="k"></span> retrieved chunks:</p>
-  <div class="eq-box"><div class="kx" data-eq="\text{HitRate} = \frac{1}{N}\sum_{i=1}^{N} \mathbb{1}\bigl[\text{gold}_i \in \text{Retrieved}_k(q_i)\bigr]" data-display="true"></div></div>
+  <p>Retrieval hit rate over <i>N</i> eval questions, where 𝟙[·] indicates the gold supporting passage appears among the top-<i>k</i> retrieved chunks (Eq. 5):</p>
+  <div class="eq-box"><span class="eq">
+    HitRate =
+    <span class="frac"><span class="n">1</span><span class="d"><i>N</i></span></span>
+    <span class="sumop"><span class="sigma">Σ</span><span><i>i</i>=1</span></span><sup style="font-size:0.8em">N</sup>
+    𝟙[ gold<sub><i>i</i></sub> ∈ Retrieved<sub><i>k</i></sub>(<i>q<sub>i</sub></i>) ]
+  </span><div class="eq-label">(5) Retrieval hit rate</div></div>
 
-  <p>Answer quality is scored by an LLM-as-judge <span class="kx" data-eq="J(\cdot) \in \{1,\dots,5\}"></span> comparing the generated answer <span class="kx" data-eq="\hat{a}_i"></span> against the gold answer <span class="kx" data-eq="a_i"></span>:</p>
-  <div class="eq-box"><div class="kx" data-eq="\overline{J} = \frac{1}{N}\sum_{i=1}^{N} J(\hat{a}_i, a_i)" data-display="true"></div></div>
+  <p>Answer quality is scored by an LLM-as-judge <i>J</i>(·) ∈ {1,…,5} comparing the generated answer <i>â<sub>i</sub></i> against the gold answer <i>a<sub>i</sub></i> (Eq. 6):</p>
+  <div class="eq-box"><span class="eq">
+    <span style="text-decoration:overline"><i>J</i></span> =
+    <span class="frac"><span class="n">1</span><span class="d"><i>N</i></span></span>
+    <span class="sumop"><span class="sigma">Σ</span><span><i>i</i>=1</span></span><sup style="font-size:0.8em">N</sup>
+    <i>J</i>(<i>â<sub>i</sub></i>, <i>a<sub>i</sub></i>)
+  </span><div class="eq-label">(6) Mean LLM-as-judge score</div></div>
 
   <h2>5. Results and Discussion <span class="status-pill status-pending">preliminary — 6 / 16 conditions complete</span></h2>
   <p>Evaluation is ongoing; results below reflect completed (vertical × approach) conditions at time of writing. Remaining conditions are blocked on LLM API daily-quota resets and will be added as they complete — the harness and report below regenerate automatically from whatever is available.</p>
@@ -266,15 +290,6 @@
   function cssVar(name) {
     return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
   }
-
-  // ---- KaTeX render pass ----
-  document.querySelectorAll('.kx').forEach(function (el) {
-    var eq = el.getAttribute('data-eq');
-    var display = el.getAttribute('data-display') === 'true';
-    try {
-      katex.render(eq, el, { throwOnError: false, displayMode: display });
-    } catch (e) { el.textContent = eq; }
-  });
 
   // ---- results data (synced with results/summary.json at time of writing) ----
   var financeData = [
