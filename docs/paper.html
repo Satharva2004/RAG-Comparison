@@ -1,0 +1,377 @@
+<title>RAG Architectures Compared</title>
+<style>
+  :root {
+    color-scheme: light;
+    --page:      #f9f9f7;
+    --surface:    #fcfcfb;
+    --ink:        #0b0b0b;
+    --ink-2:      #52514e;
+    --muted:      #898781;
+    --grid:       #e1e0d9;
+    --axis:       #c3c2b7;
+    --border:     rgba(11,11,11,0.10);
+    --s1: #2a78d6; /* vector   - blue   */
+    --s2: #eb6834; /* bm25     - orange */
+    --s3: #1baf7a; /* hybrid   - aqua   */
+    --s4: #eda100; /* graph    - yellow */
+    --good: #0ca30c;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      color-scheme: dark;
+      --page:      #0d0d0d;
+      --surface:    #1a1a19;
+      --ink:        #ffffff;
+      --ink-2:      #c3c2b7;
+      --muted:      #898781;
+      --grid:       #2c2c2a;
+      --axis:       #383835;
+      --border:     rgba(255,255,255,0.10);
+      --s1: #3987e5; --s2: #d95926; --s3: #199e70; --s4: #c98500; --good: #0ca30c;
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --page:      #0d0d0d;
+    --surface:    #1a1a19;
+    --ink:        #ffffff;
+    --ink-2:      #c3c2b7;
+    --muted:      #898781;
+    --grid:       #2c2c2a;
+    --axis:       #383835;
+    --s1: #3987e5; --s2: #d95926; --s3: #199e70; --s4: #c98500; --good: #0ca30c;
+  }
+
+  body { background: var(--page); color: var(--ink); font: 15px/1.6 system-ui,-apple-system,"Segoe UI",sans-serif; }
+  .page { max-width: 880px; margin: 0 auto; padding: 40px 20px 80px; }
+  h1 { font-size: 1.7rem; margin: 0 0 6px; }
+  .subtitle { color: var(--ink-2); font-size: 1rem; margin-bottom: 28px; }
+  h2 { font-size: 1.2rem; border-bottom: 1px solid var(--grid); padding-bottom: 8px; margin-top: 44px; }
+  h3 { font-size: 1rem; margin-top: 24px; }
+  p { color: var(--ink-2); }
+  .abstract { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 18px 20px; }
+  .abstract p { color: var(--ink); margin: 0; }
+  .status-pill { display:inline-block; font-size:0.72rem; font-weight:600; padding:2px 8px; border-radius:999px; }
+  .status-done { background: color-mix(in srgb, var(--good) 18%, transparent); color: var(--good); }
+  .status-pending { background: color-mix(in srgb, var(--muted) 20%, transparent); color: var(--muted); }
+  table { width: 100%; border-collapse: collapse; font-size: 0.88rem; margin: 14px 0; }
+  th, td { text-align: left; padding: 7px 10px; border-bottom: 1px solid var(--grid); }
+  th { color: var(--ink-2); font-weight: 600; font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.02em; }
+  td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+  .eq-box { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 14px 18px; margin: 14px 0; overflow-x: auto; }
+  .eq-label { color: var(--muted); font-size: 0.78rem; margin-top: 4px; }
+  figure { margin: 20px 0; }
+  figcaption { color: var(--muted); font-size: 0.82rem; margin-top: 8px; }
+  .refs li { color: var(--ink-2); margin-bottom: 8px; font-size: 0.9rem; }
+  .chart-wrap { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 16px 18px 8px; }
+  .legend { display: flex; gap: 16px; flex-wrap: wrap; font-size: 0.82rem; color: var(--ink-2); margin-bottom: 6px; }
+  .legend span { display: inline-flex; align-items: center; gap: 6px; }
+  .swatch { width: 10px; height: 10px; border-radius: 2px; display: inline-block; }
+  .bar-tip { position: fixed; pointer-events: none; background: var(--ink); color: var(--page); font-size: 0.78rem; padding: 4px 8px; border-radius: 6px; opacity: 0; transform: translate(-50%, -100%); transition: opacity .1s; z-index: 10; white-space: nowrap; }
+  .arch-diagram { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 12px; }
+  code { background: var(--surface); border: 1px solid var(--border); border-radius: 4px; padding: 1px 5px; font-size: 0.85em; }
+
+  /* ---- hand-built math notation (no external math-font dependency) ---- */
+  .eq { font-size: 1.05rem; color: var(--ink); font-family: "Cambria Math", Cambria, "Times New Roman", serif; }
+  .eq i { font-style: italic; }
+  .frac { display: inline-flex; flex-direction: column; vertical-align: middle; text-align: center; margin: 0 .25em; position: relative; top: 0.1em; }
+  .frac .n { padding: 0 .2em .1em; border-bottom: 1.3px solid var(--ink); line-height: 1.3; }
+  .frac .d { padding: .1em .2em 0; line-height: 1.3; }
+  .sumop { display: inline-flex; flex-direction: column; align-items: center; vertical-align: middle; margin: 0 .2em; font-size: 0.72em; line-height: 1.05; }
+  .sumop .sigma { font-size: 1.7em; line-height: 0.85; }
+  .bigpar { font-size: 1.4em; vertical-align: -0.15em; }
+</style>
+
+<div class="page">
+  <h1>RAG, Vectorless Retrieval, and GraphRAG: A Comparative Study Across Enterprise Verticals</h1>
+  <div class="subtitle">Vector (Pinecone) vs. Vectorless (BM25) vs. Graph (Neo4j) retrieval, evaluated on finance, marketing, product, and service-support corpora</div>
+
+  <div class="abstract">
+    <p><strong>Abstract.</strong> Retrieval-Augmented Generation (RAG) systems for enterprise question answering are commonly built on one of three retrieval paradigms: dense vector search, sparse lexical (vectorless) search, and knowledge-graph traversal. Practitioners lack a systematic, cross-domain comparison of when each paradigm — or a hybrid of them — is preferable. We present an evaluation harness that ingests the same document corpus into a vector index (Pinecone), a lexical index (BM25), and a knowledge graph (Neo4j), and measures retrieval hit rate, LLM-judged answer quality, and latency across four enterprise verticals: finance, marketing, product, and customer service. We report preliminary results and a decision framework for practitioners choosing a retrieval architecture under real operational constraints.</p>
+  </div>
+
+  <h2>1. Introduction</h2>
+  <p>Enterprise deployments of large language models increasingly rely on retrieval-augmented generation to ground responses in proprietary documents. Three retrieval paradigms dominate practice: dense <em>vector</em> retrieval over embeddings, sparse lexical (<em>vectorless</em>) retrieval such as BM25, and <em>graph</em>-based retrieval that traverses entity relationships extracted from the corpus. A fourth, <em>hybrid</em>, approach fuses vector and lexical signals. Prior comparative work (Section 2) evaluates these paradigms on general long-document benchmarks; it does not address whether the ranking of approaches changes across distinct enterprise domains with different document structure — structured financial filings, unstructured marketing copy, product Q&amp;A, and ticket-style customer support text. This paper reports a controlled, same-corpus comparison across those four domains.</p>
+
+  <h2>2. Related Work</h2>
+  <p>Edge et al. (Microsoft Research) introduced GraphRAG, constructing an LLM-derived entity-relationship graph with community summarization to answer global, corpus-level queries that plain vector RAG struggles with, at the cost of a substantially more expensive indexing pipeline. Asai et al. proposed Self-RAG, which trains a model to adaptively decide when to retrieve and to self-critique retrieved passages, improving factuality without a fixed retrieval architecture. Closest to this work, an industry analysis (Tailored AI, 2025, <em>"RAG vs GraphRAG: A Performance Analysis"</em>) benchmarked RAG against GraphRAG on the NovelQA long-document benchmark and on multi-document summarization (SQuALITY, QMSum, ODSum), stratifying queries by single-hop vs. multi-hop reasoning difficulty and scoring with an LLM-as-judge. It found plain RAG preferable for simple factual queries (68.7% accuracy) and GraphRAG preferable for multi-hop and summarization queries, with a hybrid strategy improving on both by roughly 6.4%. That study used one general-purpose document benchmark; it did not vary the underlying domain. This paper adopts a similar LLM-as-judge methodology but varies the enterprise domain instead of query-hop-depth, and adds a vectorless (BM25) baseline absent from the GraphRAG-focused prior work.</p>
+
+  <h2>3. Proposed Architecture</h2>
+  <p>Figure 1 shows the end-to-end pipeline. A single normalized document corpus per vertical feeds three independent ingestion paths — dense embedding into a vector index, tokenization into a lexical index, and LLM-driven entity/relation extraction into a knowledge graph — so that all four retrieval strategies (vector, vectorless, hybrid, graph) draw on identical source text. Retrieved passages are passed to a shared generation and judging stage, isolating retrieval quality as the only varying factor between conditions.</p>
+
+  <figure>
+    <div class="arch-diagram">
+      <svg viewBox="0 0 860 480" width="100%" role="img" aria-label="Architecture diagram">
+        <defs>
+          <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M0,0 L10,5 L0,10 z" fill="var(--muted)"></path>
+          </marker>
+        </defs>
+        <style>
+          .blk { fill: var(--surface); stroke: var(--axis); stroke-width: 1.2; rx: 8; }
+          .blk-t { fill: var(--ink); font-size: 13px; font-weight: 600; text-anchor: middle; }
+          .blk-s { fill: var(--muted); font-size: 10.5px; text-anchor: middle; }
+          .grp { fill: none; stroke: var(--grid); stroke-width: 1; stroke-dasharray: 3 3; rx: 10; }
+          .grp-t { fill: var(--muted); font-size: 10.5px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; }
+          .edge { stroke: var(--muted); stroke-width: 1.4; fill: none; marker-end: url(#arrow); }
+        </style>
+
+        <!-- source -->
+        <rect class="blk" x="360" y="10" width="140" height="46"></rect>
+        <text class="blk-t" x="430" y="30">Document Corpus</text>
+        <text class="blk-s" x="430" y="44">finance / marketing / product / service</text>
+
+        <!-- ingestion group -->
+        <rect class="grp" x="20" y="90" width="820" height="130"></rect>
+        <text class="grp-t" x="35" y="108">Ingestion (per vertical, shared source text)</text>
+
+        <rect class="blk" x="40" y="125" width="230" height="70"></rect>
+        <text class="blk-t" x="155" y="150">Embed (nomic-embed)</text>
+        <text class="blk-s" x="155" y="167">→ Pinecone vector index</text>
+
+        <rect class="blk" x="315" y="125" width="230" height="70"></rect>
+        <text class="blk-t" x="430" y="150">Tokenize</text>
+        <text class="blk-s" x="430" y="167">→ local BM25 index</text>
+
+        <rect class="blk" x="590" y="125" width="230" height="70"></rect>
+        <text class="blk-t" x="705" y="150">LLM entity/relation extraction</text>
+        <text class="blk-s" x="705" y="167">→ Neo4j knowledge graph</text>
+
+        <!-- retrieval group -->
+        <rect class="grp" x="20" y="250" width="820" height="80"></rect>
+        <text class="grp-t" x="35" y="268">Retrieval (query time)</text>
+
+        <rect class="blk" x="40" y="282" width="185" height="40"></rect>
+        <text class="blk-t" x="132" y="306">Vector search</text>
+
+        <rect class="blk" x="240" y="282" width="185" height="40"></rect>
+        <text class="blk-t" x="332" y="306">Vectorless (BM25)</text>
+
+        <rect class="blk" x="440" y="282" width="185" height="40"></rect>
+        <text class="blk-t" x="532" y="306">Hybrid (RRF fusion)</text>
+
+        <rect class="blk" x="640" y="282" width="180" height="40"></rect>
+        <text class="blk-t" x="730" y="306">Graph traversal</text>
+
+        <!-- generation / judge -->
+        <rect class="blk" x="220" y="380" width="200" height="50"></rect>
+        <text class="blk-t" x="320" y="402">Groq LLM generation</text>
+        <text class="blk-s" x="320" y="417">gpt-oss-120b</text>
+
+        <rect class="blk" x="460" y="380" width="200" height="50"></rect>
+        <text class="blk-t" x="560" y="402">LLM-as-judge scoring</text>
+        <text class="blk-s" x="560" y="417">vs. gold answer</text>
+
+        <!-- edges -->
+        <path class="edge" d="M430,56 L430,90"></path>
+        <path class="edge" d="M430,90 L155,125"></path>
+        <path class="edge" d="M430,90 L430,125"></path>
+        <path class="edge" d="M430,90 L705,125"></path>
+
+        <path class="edge" d="M155,195 L132,282"></path>
+        <path class="edge" d="M430,195 L332,282"></path>
+        <path class="edge" d="M155,195 L440,282"></path>
+        <path class="edge" d="M430,195 L620,282"></path>
+        <path class="edge" d="M705,195 L730,282"></path>
+
+        <path class="edge" d="M132,322 L320,380"></path>
+        <path class="edge" d="M332,322 L320,380"></path>
+        <path class="edge" d="M532,322 L320,380"></path>
+        <path class="edge" d="M730,322 L320,380"></path>
+        <path class="edge" d="M420,405 L460,405"></path>
+      </svg>
+    </div>
+    <figcaption>Figure 1. Proposed architecture. A shared corpus is ingested once into three independent indexes; four retrievers query those indexes at inference time; generation and judging are held constant across conditions so only the retrieval strategy varies.</figcaption>
+  </figure>
+
+  <h2>4. Methodology</h2>
+
+  <h3>4.1 Datasets</h3>
+  <p>Each vertical uses a public, freely accessible dataset re-purposed as an enterprise document corpus, capped at 200 documents for indexing and 20 held-out question/answer pairs for evaluation (Table 1).</p>
+  <table>
+    <thead><tr><th>Vertical</th><th>Dataset</th><th>Source</th><th class="num">Corpus size</th><th class="num">Eval questions</th><th>License</th></tr></thead>
+    <tbody>
+      <tr><td>Finance</td><td>financial-qa-10K</td><td>Hugging Face: virattt/financial-qa-10K</td><td class="num">200</td><td class="num">20</td><td>Unspecified<sup>†</sup></td></tr>
+      <tr><td>Marketing</td><td>marketing_social_media</td><td>Hugging Face: RafaM97/marketing_social_media</td><td class="num">200</td><td class="num">20</td><td>Unspecified<sup>†</sup></td></tr>
+      <tr><td>Product</td><td>amazon-qa</td><td>Hugging Face: sentence-transformers/amazon-qa</td><td class="num">200</td><td class="num">20</td><td>Community/research use<sup>†</sup></td></tr>
+      <tr><td>Service</td><td>Bitext customer support</td><td>Hugging Face: bitext/Bitext-customer-support-llm-chatbot-training-dataset</td><td class="num">200</td><td class="num">20</td><td>CDLA-Sharing-1.0</td></tr>
+    </tbody>
+  </table>
+  <p style="font-size:0.82rem;color:var(--muted)">† No explicit license tag on the source page at time of writing; verify against the linked repository/paper before any commercial reuse.</p>
+
+  <h3>4.2 Retrieval formulations</h3>
+  <p>Vector retrieval ranks documents by cosine similarity between the query embedding <span class="kx" data-eq="q"></span> and document embedding <span class="kx" data-eq="d"></span>:</p>
+  <div class="eq-box"><div class="kx" data-eq="\text{sim}(q, d) = \frac{q \cdot d}{\lVert q \rVert \, \lVert d \rVert}" data-display="true"></div></div>
+
+  <p>Vectorless retrieval uses Okapi BM25 over tokenized text, where <span class="kx" data-eq="f(q_i, D)"></span> is the term frequency of query term <span class="kx" data-eq="q_i"></span> in document <span class="kx" data-eq="D"></span>, <span class="kx" data-eq="|D|"></span> its length, and <span class="kx" data-eq="\text{avgdl}"></span> the corpus average length:</p>
+  <div class="eq-box"><div class="kx" data-eq="\text{BM25}(D, Q) = \sum_{i=1}^{n} \text{IDF}(q_i) \cdot \frac{f(q_i, D) \cdot (k_1 + 1)}{f(q_i, D) + k_1 \left(1 - b + b \cdot \frac{|D|}{\text{avgdl}}\right)}" data-display="true"></div></div>
+
+  <p>Hybrid retrieval fuses the two rank lists with Reciprocal Rank Fusion (RRF), where <span class="kx" data-eq="\text{rank}_r(d)"></span> is document <span class="kx" data-eq="d"></span>'s rank under retriever <span class="kx" data-eq="r"></span> and <span class="kx" data-eq="k=60"></span>:</p>
+  <div class="eq-box"><div class="kx" data-eq="\text{RRF}(d) = \sum_{r \in \{\text{vector}, \text{bm25}\}} \frac{1}{k + \text{rank}_r(d)}" data-display="true"></div></div>
+
+  <p>Graph retrieval extracts an entity set <span class="kx" data-eq="E(q)"></span> from the query and ranks documents by shared-entity overlap with each document's extracted entity set <span class="kx" data-eq="E(d)"></span>:</p>
+  <div class="eq-box"><div class="kx" data-eq="\text{score}_{\text{graph}}(d, q) = \bigl| E(q) \cap E(d) \bigr|" data-display="true"></div></div>
+
+  <h3>4.3 Evaluation metrics</h3>
+  <p>Retrieval hit rate over <span class="kx" data-eq="N"></span> eval questions, where <span class="kx" data-eq="\mathbb{1}[\cdot]"></span> indicates the gold supporting passage appears among the top-<span class="kx" data-eq="k"></span> retrieved chunks:</p>
+  <div class="eq-box"><div class="kx" data-eq="\text{HitRate} = \frac{1}{N}\sum_{i=1}^{N} \mathbb{1}\bigl[\text{gold}_i \in \text{Retrieved}_k(q_i)\bigr]" data-display="true"></div></div>
+
+  <p>Answer quality is scored by an LLM-as-judge <span class="kx" data-eq="J(\cdot) \in \{1,\dots,5\}"></span> comparing the generated answer <span class="kx" data-eq="\hat{a}_i"></span> against the gold answer <span class="kx" data-eq="a_i"></span>:</p>
+  <div class="eq-box"><div class="kx" data-eq="\overline{J} = \frac{1}{N}\sum_{i=1}^{N} J(\hat{a}_i, a_i)" data-display="true"></div></div>
+
+  <h2>5. Results and Discussion <span class="status-pill status-pending">preliminary — 6 / 16 conditions complete</span></h2>
+  <p>Evaluation is ongoing; results below reflect completed (vertical × approach) conditions at time of writing. Remaining conditions are blocked on LLM API daily-quota resets and will be added as they complete — the harness and report below regenerate automatically from whatever is available.</p>
+
+  <h3>5.1 Finance (complete)</h3>
+  <figure class="chart-wrap">
+    <div class="legend" id="legend-finance"></div>
+    <svg id="chart-finance-judge" viewBox="0 0 640 200" width="100%" role="img" aria-label="Finance judge score by approach"></svg>
+  </figure>
+  <table>
+    <thead><tr><th>Approach</th><th class="num">Retrieval hit rate</th><th class="num">Avg. judge score (1–5)</th><th class="num">Avg. retrieval latency (s)</th><th class="num">Avg. generation latency (s)</th></tr></thead>
+    <tbody id="tbl-finance"></tbody>
+  </table>
+  <p>All three baseline retrievers achieve a perfect 1.0 retrieval hit rate on finance, reflecting the corpus's short, self-contained context passages (10-K filing excerpts) where both semantic and lexical overlap with the question are high. Hybrid edges out vector and BM25 slightly on judge score (4.90 vs. 4.80 / 4.85). Graph retrieval underperforms the other three on both hit rate (0.70) and judge score (4.10): financial filing text carries few distinct named entities per passage (mostly the same company/ticker repeated), giving the entity-overlap ranking less signal to discriminate between candidate passages than dense or lexical similarity does.</p>
+
+  <h3>5.2 Marketing (partial — vector, BM25 complete; hybrid, graph pending)</h3>
+  <table>
+    <thead><tr><th>Approach</th><th class="num">Retrieval hit rate</th><th class="num">Avg. judge score (1–5)</th><th>Status</th></tr></thead>
+    <tbody id="tbl-marketing"></tbody>
+  </table>
+  <p>Marketing shows a markedly different pattern from finance: BM25's hit rate drops to 0.30 (vs. 1.0 on finance) while vector retrieval holds up better (0.60). Marketing corpus documents are free-form campaign strategy text with high lexical variability and paraphrase-heavy queries (the eval questions are campaign <em>briefs</em>, not literal excerpts of the answer text), which disadvantages exact/near-exact lexical matching relative to dense semantic similarity. This is consistent with the general expectation that vectorless retrieval favors terminology-stable domains (finance, structured tickets) and struggles on paraphrased, free-text domains (marketing).</p>
+
+  <h3>5.3 Product and Service <span class="status-pill status-pending">pending</span></h3>
+  <p>All four approaches for the product and service verticals are queued and will be added once evaluation completes.</p>
+
+  <h2>6. Limitations</h2>
+  <p>This study has several limitations that bound the strength of its conclusions. First, the evaluation set is small — 20 questions per vertical — chosen to fit within free-tier LLM API daily token quotas encountered during this study; it supports directional observations but not statistically significant claims, and confidence intervals are not reported. Second, answer quality is scored by a single LLM-as-judge (gpt-oss-120b) with no human validation and no explicit mitigation for judge position bias, a known confound in LLM-as-judge methodologies. Third, the graph corpus is capped at 200 documents per vertical with a single-pass LLM entity-extraction step and no entity resolution/deduplication, likely understating graph RAG's potential relative to a production-grade knowledge-graph construction pipeline (e.g., Microsoft GraphRAG's community detection and summarization). Fourth, retrieval hit rate is computed via substring containment against a single gold passage per question, which can undercount correct retrievals when the same fact appears in multiple corpus passages. Finally, results for the product and service verticals were incomplete at time of writing due to LLM provider rate limits.</p>
+
+  <h2>7. Conclusion</h2>
+  <p>Preliminary results across two of four enterprise verticals indicate that no single retrieval paradigm dominates: hybrid (vector + BM25 via RRF) is the strongest or tied-strongest approach where lexical and semantic signals agree (finance), while vector retrieval is more robust than lexical retrieval alone on free-text, paraphrase-heavy domains (marketing). Graph retrieval, in its current entity-overlap formulation, has not yet outperformed the simpler baselines on either completed vertical, suggesting its value may be concentrated in domains with richer, more distinctive entity structure than seen so far (e.g., service tickets linking customers, orders, and products) — to be confirmed once product and service results complete.</p>
+
+  <h2>References</h2>
+  <ol class="refs">
+    <li>Edge, D. et al. "From Local to Global: A Graph RAG Approach to Query-Focused Summarization." Microsoft Research, 2024.</li>
+    <li>Asai, A. et al. "Self-RAG: Learning to Retrieve, Generate, and Critique through Self-Reflection." ICLR, 2024.</li>
+    <li>Tailored AI. "RAG vs GraphRAG: A Performance Analysis." <em>tailoredai.substack.com/p/rag-vs-graphrag-a-performance-analysis</em>, 2025.</li>
+    <li>Robertson, S., Zaragoza, H. "The Probabilistic Relevance Framework: BM25 and Beyond." Foundations and Trends in Information Retrieval, 2009.</li>
+    <li>Cormack, G. V., Clarke, C. L. A., Buettcher, S. "Reciprocal Rank Fusion Outperforms Condorcet and Individual Rank Learning Methods." SIGIR, 2009.</li>
+  </ol>
+</div>
+
+<div class="bar-tip" id="bar-tip"></div>
+
+<script>
+(function () {
+  function cssVar(name) {
+    return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+  }
+
+  // ---- KaTeX render pass ----
+  document.querySelectorAll('.kx').forEach(function (el) {
+    var eq = el.getAttribute('data-eq');
+    var display = el.getAttribute('data-display') === 'true';
+    try {
+      katex.render(eq, el, { throwOnError: false, displayMode: display });
+    } catch (e) { el.textContent = eq; }
+  });
+
+  // ---- results data (synced with results/summary.json at time of writing) ----
+  var financeData = [
+    { approach: 'Vector',   hit: 1.00, judge: 4.80, retLat: 1.455, genLat: 2.521 },
+    { approach: 'BM25',     hit: 1.00, judge: 4.85, retLat: 0.005, genLat: 4.486 },
+    { approach: 'Hybrid',   hit: 1.00, judge: 4.90, retLat: 1.353, genLat: 2.620 },
+    { approach: 'Graph',    hit: 0.70, judge: 4.10, retLat: 1.677, genLat: 3.350 }
+  ];
+  var marketingData = [
+    { approach: 'Vector', hit: 0.60, judge: 4.20, status: 'done' },
+    { approach: 'BM25',   hit: 0.30, judge: 3.90, status: 'done' },
+    { approach: 'Hybrid', hit: null, judge: null, status: 'pending' },
+    { approach: 'Graph',  hit: null, judge: null, status: 'pending' }
+  ];
+  var colors = { Vector: cssVar('--s1'), BM25: cssVar('--s2'), Hybrid: cssVar('--s3'), Graph: cssVar('--s4') };
+
+  // ---- finance table ----
+  var tblFinance = document.getElementById('tbl-finance');
+  financeData.forEach(function (d) {
+    var tr = document.createElement('tr');
+    tr.innerHTML = '<td>' + d.approach + '</td><td class="num">' + d.hit.toFixed(2) + '</td><td class="num">' +
+      d.judge.toFixed(2) + '</td><td class="num">' + d.retLat.toFixed(2) + '</td><td class="num">' + d.genLat.toFixed(2) + '</td>';
+    tblFinance.appendChild(tr);
+  });
+
+  // ---- marketing table ----
+  var tblMarketing = document.getElementById('tbl-marketing');
+  marketingData.forEach(function (d) {
+    var tr = document.createElement('tr');
+    var statusHtml = d.status === 'done'
+      ? '<span class="status-pill status-done">complete</span>'
+      : '<span class="status-pill status-pending">pending</span>';
+    tr.innerHTML = '<td>' + d.approach + '</td><td class="num">' + (d.hit === null ? '—' : d.hit.toFixed(2)) +
+      '</td><td class="num">' + (d.judge === null ? '—' : d.judge.toFixed(2)) + '</td><td>' + statusHtml + '</td>';
+    tblMarketing.appendChild(tr);
+  });
+
+  // ---- legend ----
+  var legend = document.getElementById('legend-finance');
+  financeData.forEach(function (d) {
+    var span = document.createElement('span');
+    span.innerHTML = '<span class="swatch" style="background:' + colors[d.approach] + '"></span>' + d.approach;
+    legend.appendChild(span);
+  });
+
+  // ---- finance judge-score bar chart (hand-drawn SVG, per dataviz mark spec) ----
+  var svg = document.getElementById('chart-finance-judge');
+  var W = 640, H = 200, padL = 30, padR = 14, padT = 14, padB = 28;
+  var plotW = W - padL - padR, plotH = H - padT - padB;
+  var maxVal = 5;
+  var barW = plotW / financeData.length * 0.5;
+  var gap = plotW / financeData.length;
+
+  var ns = 'http://www.w3.org/2000/svg';
+  function el(tag, attrs) {
+    var e = document.createElementNS(ns, tag);
+    for (var k in attrs) e.setAttribute(k, attrs[k]);
+    return e;
+  }
+
+  // gridlines + axis labels (0..5)
+  for (var v = 0; v <= 5; v++) {
+    var y = padT + plotH - (v / maxVal) * plotH;
+    svg.appendChild(el('line', { x1: padL, x2: W - padR, y1: y, y2: y, stroke: cssVar('--grid'), 'stroke-width': 1 }));
+    var t = el('text', { x: padL - 8, y: y + 4, 'text-anchor': 'end', 'font-size': 10, fill: cssVar('--muted') });
+    t.textContent = v;
+    svg.appendChild(t);
+  }
+
+  var tip = document.getElementById('bar-tip');
+  financeData.forEach(function (d, i) {
+    var cx = padL + gap * i + gap / 2;
+    var barH = (d.judge / maxVal) * plotH;
+    var y = padT + plotH - barH;
+    var rect = el('rect', {
+      x: cx - barW / 2, y: y, width: barW, height: barH, rx: 4,
+      fill: colors[d.approach]
+    });
+    rect.style.cursor = 'pointer';
+    rect.addEventListener('mousemove', function (ev) {
+      tip.style.opacity = 1;
+      tip.style.left = ev.clientX + 'px';
+      tip.style.top = (ev.clientY - 10) + 'px';
+      tip.textContent = d.approach + ': ' + d.judge.toFixed(2) + ' / 5';
+    });
+    rect.addEventListener('mouseleave', function () { tip.style.opacity = 0; });
+    svg.appendChild(rect);
+
+    var label = el('text', { x: cx, y: y - 6, 'text-anchor': 'middle', 'font-size': 11, fill: cssVar('--ink'), 'font-variant-numeric': 'tabular-nums' });
+    label.textContent = d.judge.toFixed(2);
+    svg.appendChild(label);
+
+    var xlabel = el('text', { x: cx, y: H - 8, 'text-anchor': 'middle', 'font-size': 11, fill: cssVar('--ink-2') });
+    xlabel.textContent = d.approach;
+    svg.appendChild(xlabel);
+  });
+
+  svg.appendChild(el('line', { x1: padL, x2: W - padR, y1: padT + plotH, y2: padT + plotH, stroke: cssVar('--axis'), 'stroke-width': 1.2 }));
+})();
+</script>
