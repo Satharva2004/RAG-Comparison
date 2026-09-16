@@ -61,5 +61,86 @@
     "avg_judge_score": 1.95,
     "avg_retrieval_latency_s": 2.441,
     "avg_generation_latency_s": 3.972
+  },
+  {
+    "vertical": "marketing",
+    "approach": "graph",
+    "n": 20,
+    "retrieval_hit_rate": 0.35,
+    "avg_judge_score": 1.8,
+    "avg_retrieval_latency_s": 2.978,
+    "avg_generation_latency_s": 3.905
+  },
+  {
+    "vertical": "product",
+    "approach": "vector",
+    "n": 20,
+    "retrieval_hit_rate": 0.4,
+    "avg_judge_score": 2.45,
+    "avg_retrieval_latency_s": 6.582,
+    "avg_generation_latency_s": 1.171
+  },
+  {
+    "vertical": "product",
+    "approach": "bm25",
+    "n": 20,
+    "retrieval_hit_rate": 0.2,
+    "avg_judge_score": 1.8,
+    "avg_retrieval_latency_s": 0.027,
+    "avg_generation_latency_s": 3.192
+  },
+  {
+    "vertical": "product",
+    "approach": "hybrid",
+    "n": 20,
+    "retrieval_hit_rate": 0.4,
+    "avg_judge_score": 2.25,
+    "avg_retrieval_latency_s": 0.853,
+    "avg_generation_latency_s": 2.382
+  },
+  {
+    "vertical": "product",
+    "approach": "graph",
+    "n": 20,
+    "retrieval_hit_rate": 0.35,
+    "avg_judge_score": 2.25,
+    "avg_retrieval_latency_s": 2.365,
+    "avg_generation_latency_s": 3.429
+  },
+  {
+    "vertical": "service",
+    "approach": "vector",
+    "n": 20,
+    "retrieval_hit_rate": 0.15,
+    "avg_judge_score": 3.65,
+    "avg_retrieval_latency_s": 1.094,
+    "avg_generation_latency_s": 3.076
+  },
+  {
+    "vertical": "service",
+    "approach": "bm25",
+    "n": 20,
+    "retrieval_hit_rate": 0.1,
+    "avg_judge_score": 3.55,
+    "avg_retrieval_latency_s": 0.003,
+    "avg_generation_latency_s": 4.694
+  },
+  {
+    "vertical": "service",
+    "approach": "hybrid",
+    "n": 20,
+    "retrieval_hit_rate": 0.1,
+    "avg_judge_score": 4.25,
+    "avg_retrieval_latency_s": 1.219,
+    "avg_generation_latency_s": 3.616
+  },
+  {
+    "vertical": "service",
+    "approach": "graph",
+    "n": 20,
+    "retrieval_hit_rate": 0.1,
+    "avg_judge_score": 3.7,
+    "avg_retrieval_latency_s": 3.244,
+    "avg_generation_latency_s": 3.529
   }
 ]
