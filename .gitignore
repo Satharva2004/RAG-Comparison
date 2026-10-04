@@ -6,3 +6,4 @@ venv/
 data/raw/
 *.faiss
 .langfuse/
+Resarch paper
